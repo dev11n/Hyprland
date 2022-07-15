@@ -33,6 +33,10 @@ general {
     sensitivity=1.0 # for mouse cursor
     main_mod=SUPER
 
+    # experimental nvidia support in form of automatic environment variables.
+    # this will only work as long as you have setup early loading, etc. https://wiki.archlinux.org/title/NVIDIA#DRM_kernel_mode_setting
+    nvidia_support=0
+
     gaps_in=5
     gaps_out=20
     border_size=2

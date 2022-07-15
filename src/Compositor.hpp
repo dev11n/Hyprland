@@ -137,7 +137,7 @@ public:
     CWindow*                getConstraintWindow(SMouse*);
     SMonitor*               getMonitorInDirection(const char&);
     void                    updateAllWindowsAnimatedDecorationValues();
-    void                    updateWindowAnimatedDecorationValues(CWindow*);
+    void                    updateWindowAnimatedDecorationValues(CWindow*) const;
     void                    moveWindowToWorkspace(CWindow*, const std::string&);
     int                     getNextAvailableMonitorID();
     void                    moveWorkspaceToMonitor(CWorkspace*, SMonitor*);
@@ -145,7 +145,7 @@ public:
     void                    setWindowFullscreen(CWindow*, bool, eFullscreenMode);
     void                    moveUnmanagedX11ToWindows(CWindow*);
     CWindow*                getX11Parent(CWindow*);
-    void                    scheduleFrameForMonitor(SMonitor*);
+    void                    scheduleFrameForMonitor(SMonitor*) const;
 
     std::string             explicitConfigPath;
 

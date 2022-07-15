@@ -259,10 +259,21 @@ void CCompositor::startCompositor() {
 
     initAllSignals();
 
+    // ! Custom Fork implementation
+    if (g_pConfigManager->getInt("general:nvidia_support") == 1) {
+        Debug::log(WARN, "Enabling NVIDIA Support (important: read https://wiki.archlinux.org/title/NVIDIA#DRM_kernel_mode_setting), use at your own risk!");
+        setenv("CLUTTER_BACKEND", "wayland", true);
+        setenv("XDG_SESSION_TYPE", "wayland", true);
+        setenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1", true);
+        setenv("GBM_BACKEND", "nvidia-drm", true);
+        setenv("__GLX_VENDOR_LIBRARY_NAME", "nvidia", true);
+        setenv("WLR_NO_HARDWARE_CURSORS", "1", true);
+    }
+
     // Set some env vars so that Firefox is automatically in Wayland mode
     // and QT apps too
     // electron needs -- flags so we can't really set them here
-    setenv("QT_QPA_PLATFORM", "wayland", true);
+    setenv("QT_QPA_PLATFORM", "wayland;xcb", true);
     setenv("MOZ_ENABLE_WAYLAND", "1", true);
 
     // Set XDG_CURRENT_DESKTOP to our compositor's name
@@ -352,7 +363,7 @@ SMonitor* CCompositor::getMonitorFromVector(const Vector2D& point) {
 void CCompositor::removeWindowFromVectorSafe(CWindow* pWindow) {
     if (windowExists(pWindow) && !pWindow->m_bFadingOut){
         if (pWindow->m_bIsX11 && pWindow->m_iX11Type == 2) {
-            m_dUnmanagedX11Windows.erase(std::remove_if(m_dUnmanagedX11Windows.begin(), m_dUnmanagedX11Windows.end(), [&](std::unique_ptr<CWindow>& el) { return el.get() == pWindow; }));
+            m_dUnmanagedX11Windows.erase(std::remove_if(m_dUnmanagedX11Windows.begin(), m_dUnmanagedX11Windows.end(), [&](std::unique_ptr<CWindow>& el) { return el.get() == pWindow; }), m_dUnmanagedX11Windows.end());
         }
 
         // if X11, also check its children
@@ -902,7 +913,7 @@ void CCompositor::cleanupFadingOut(const int& monid) {
             g_pHyprOpenGL->m_mLayerFramebuffers.erase(ls);
             
             delete ls;
-            m_vSurfacesFadingOut.erase(std::remove(m_vSurfacesFadingOut.begin(), m_vSurfacesFadingOut.end(), ls));
+            m_vSurfacesFadingOut.erase(std::remove(m_vSurfacesFadingOut.begin(), m_vSurfacesFadingOut.end(), ls), m_vSurfacesFadingOut.end());
 
             Debug::log(LOG, "Cleanup: destroyed a layersurface");
 
@@ -1057,7 +1068,7 @@ CWorkspace* CCompositor::getWorkspaceByString(const std::string& str) {
     }
 
     try {
-        std::string name = "";
+        std::string name;
         return getWorkspaceByID(getWorkspaceIDFromString(str, name));
     } catch (std::exception& e) {
         Debug::log(ERR, "Error in getWorkspaceByString, invalid id");
@@ -1163,7 +1174,7 @@ void CCompositor::updateAllWindowsAnimatedDecorationValues() {
     }
 }
 
-void CCompositor::updateWindowAnimatedDecorationValues(CWindow* pWindow) {
+void CCompositor::updateWindowAnimatedDecorationValues(CWindow* pWindow) const {
     // optimization
     static int64_t* ACTIVECOL = &g_pConfigManager->getConfigValuePtr("general:col.active_border")->intValue;
     static int64_t* INACTIVECOL = &g_pConfigManager->getConfigValuePtr("general:col.inactive_border")->intValue;
@@ -1346,7 +1357,7 @@ void CCompositor::updateWorkspaceWindowDecos(const int& id) {
     }
 }
 
-void CCompositor::scheduleFrameForMonitor(SMonitor* pMonitor) {
+void CCompositor::scheduleFrameForMonitor(SMonitor* pMonitor) const {
     if ((m_sWLRSession && !m_sWLRSession->active) || !m_bSessionActive)
         return;
 
