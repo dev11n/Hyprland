@@ -174,6 +174,9 @@ void CCompositor::initAllSignals() {
     addWLSignal(&m_sWLRCursor->events.swipe_begin, &Events::listen_swipeBegin, m_sWLRCursor, "WLRCursor");
     addWLSignal(&m_sWLRCursor->events.swipe_update, &Events::listen_swipeUpdate, m_sWLRCursor, "WLRCursor");
     addWLSignal(&m_sWLRCursor->events.swipe_end, &Events::listen_swipeEnd, m_sWLRCursor, "WLRCursor");
+    addWLSignal(&m_sWLRCursor->events.pinch_begin, &Events::listen_pinchBegin, m_sWLRCursor, "WLRCursor");
+    addWLSignal(&m_sWLRCursor->events.pinch_update, &Events::listen_pinchUpdate, m_sWLRCursor, "WLRCursor");
+    addWLSignal(&m_sWLRCursor->events.pinch_end, &Events::listen_pinchEnd, m_sWLRCursor, "WLRCursor");
     addWLSignal(&m_sWLRBackend->events.new_input, &Events::listen_newInput, m_sWLRBackend, "Backend");
     addWLSignal(&m_sSeat.seat->events.request_set_cursor, &Events::listen_requestMouse, &m_sSeat, "Seat");
     addWLSignal(&m_sSeat.seat->events.request_set_selection, &Events::listen_requestSetSel, &m_sSeat, "Seat");
@@ -227,6 +230,9 @@ void CCompositor::startCompositor() {
     Debug::log(LOG, "Creating the AnimationManager!");
     g_pAnimationManager = std::make_unique<CAnimationManager>();
 
+    Debug::log(LOG, "Creating the LayoutManager!");
+    g_pLayoutManager = std::make_unique<CLayoutManager>();
+
     Debug::log(LOG, "Creating the ConfigManager!");
     g_pConfigManager = std::make_unique<CConfigManager>();
 
@@ -244,9 +250,6 @@ void CCompositor::startCompositor() {
 
     Debug::log(LOG, "Creating the XWaylandManager!");
     g_pXWaylandManager = std::make_unique<CHyprXWaylandManager>();
-
-    Debug::log(LOG, "Creating the LayoutManager!");
-    g_pLayoutManager = std::make_unique<CLayoutManager>();
 
     Debug::log(LOG, "Creating the EventManager!");
     g_pEventManager = std::make_unique<CEventManager>();
@@ -1181,7 +1184,8 @@ void CCompositor::updateWindowAnimatedDecorationValues(CWindow* pWindow) const {
     static auto *const PINACTIVEALPHA = &g_pConfigManager->getConfigValuePtr("decoration:inactive_opacity")->floatValue;
     static auto *const PACTIVEALPHA = &g_pConfigManager->getConfigValuePtr("decoration:active_opacity")->floatValue;
     static auto *const PFULLSCREENALPHA = &g_pConfigManager->getConfigValuePtr("decoration:fullscreen_opacity")->floatValue;
-
+    static auto *const PSHADOWCOL = &g_pConfigManager->getConfigValuePtr("decoration:col.shadow")->intValue;
+    static auto *const PSHADOWCOLINACTIVE = &g_pConfigManager->getConfigValuePtr("decoration:col.shadow_inactive")->intValue;
 
     // border
     const auto RENDERDATA = g_pLayoutManager->getCurrentLayout()->requestRenderHints(pWindow);
@@ -1208,6 +1212,13 @@ void CCompositor::updateWindowAnimatedDecorationValues(CWindow* pWindow) const {
             pWindow->m_fActiveInactiveAlpha = pWindow->m_sSpecialRenderData.alpha * *PACTIVEALPHA;
         else
             pWindow->m_fActiveInactiveAlpha = pWindow->m_sSpecialRenderData.alphaInactive != -1 ? pWindow->m_sSpecialRenderData.alphaInactive * *PINACTIVEALPHA : *PINACTIVEALPHA;
+    }
+
+    // shadow
+    if (pWindow == m_pLastWindow) {
+        pWindow->m_cRealShadowColor = CColor(*PSHADOWCOL);
+    } else {
+        pWindow->m_cRealShadowColor = CColor(*PSHADOWCOLINACTIVE != INT_MAX ? *PSHADOWCOLINACTIVE : *PSHADOWCOL);
     }
 }
 
