@@ -429,6 +429,9 @@ void CKeybindManager::moveActiveToWorkspace(std::string args) {
         return;
     }
 
+    auto PSAVEDSIZE = PWINDOW->m_vRealSize.vec();
+    auto PSAVEDPOS = PWINDOW->m_vRealPosition.vec();
+
     g_pLayoutManager->getCurrentLayout()->onWindowRemoved(PWINDOW);
 
     g_pKeybindManager->changeworkspace(args);
@@ -456,20 +459,21 @@ void CKeybindManager::moveActiveToWorkspace(std::string args) {
         PWORKSPACE->m_bHasFullscreenWindow = false;
     }
 
+    if (PWINDOW->m_bIsFullscreen) {
+        PWINDOW->m_bIsFullscreen = false;
+        PSAVEDPOS = PSAVEDPOS + Vector2D(10, 10);
+        PSAVEDSIZE = PSAVEDSIZE - Vector2D(20, 20);
+    }
+
     // Hack: So that the layout doesnt find our window at the cursor
     PWINDOW->m_vPosition = Vector2D(-42069, -42069);
     
-    // Save the real position and size because the layout might set its own
-    const auto PSAVEDSIZE = PWINDOW->m_vRealSize.vec();
-    const auto PSAVEDPOS = PWINDOW->m_vRealPosition.vec();
     g_pLayoutManager->getCurrentLayout()->onWindowCreated(PWINDOW);
-    // and restore it
-    PWINDOW->m_vRealPosition.setValue(PSAVEDPOS);
-    PWINDOW->m_vRealSize.setValue(PSAVEDSIZE);
 
+    // and restore it
     if (PWINDOW->m_bIsFloating) {
-        PWINDOW->m_vRealPosition.setValue(PWINDOW->m_vRealPosition.vec() - g_pCompositor->getMonitorFromID(OLDWORKSPACE->m_iMonitorID)->vecPosition);
-        PWINDOW->m_vRealPosition.setValue(PWINDOW->m_vRealPosition.vec() + g_pCompositor->getMonitorFromID(PWORKSPACE->m_iMonitorID)->vecPosition);
+        PWINDOW->m_vRealSize.setValue(PSAVEDSIZE);
+        PWINDOW->m_vRealPosition.setValueAndWarp(PSAVEDPOS - g_pCompositor->getMonitorFromID(OLDWORKSPACE->m_iMonitorID)->vecPosition + g_pCompositor->getMonitorFromID(PWORKSPACE->m_iMonitorID)->vecPosition);
         PWINDOW->m_vPosition = PWINDOW->m_vRealPosition.vec();
     }
 
@@ -1063,27 +1067,56 @@ void CKeybindManager::circleNext(std::string arg) {
 }
 
 void CKeybindManager::focusWindow(std::string regexp) {
-    bool titleRegex = false;
+    eFocusWindowMode mode = MODE_CLASS_REGEX;
+
     std::regex regexCheck(regexp);
+    std::string matchCheck;    
     if (regexp.find("title:") == 0) {
-        titleRegex = true;
+        mode = MODE_TITLE_REGEX;
         regexCheck = std::regex(regexp.substr(6));
+    }
+    else if (regexp.find("address:") == 0) {
+        mode = MODE_ADDRESS;
+        matchCheck = regexp.substr(8);
+    }
+    else if (regexp.find("pid:") == 0) {
+        mode = MODE_PID;
+        matchCheck = regexp.substr(4);
     }
 
     for (auto& w : g_pCompositor->m_vWindows) {
         if (!w->m_bIsMapped || w->m_bHidden)
             continue;
 
-        if (titleRegex) {
-            const auto windowTitle = g_pXWaylandManager->getTitle(w.get());
-            if (!std::regex_search(windowTitle, regexCheck))
-                continue;
+        switch (mode) {
+            case MODE_CLASS_REGEX: {
+                const auto windowClass = g_pXWaylandManager->getAppIDClass(w.get());
+                if (!std::regex_search(g_pXWaylandManager->getAppIDClass(w.get()), regexCheck))
+                    continue;
+                break;
+            }
+            case MODE_TITLE_REGEX: {
+                const auto windowTitle = g_pXWaylandManager->getTitle(w.get());
+                if (!std::regex_search(windowTitle, regexCheck))
+                    continue;
+                break;
+            }
+            case MODE_ADDRESS: {
+                std::string addr = getFormat("0x%x", w.get());
+                if (matchCheck != addr)
+                    continue;
+                break;
+            }
+            case MODE_PID: {
+                std::string pid = getFormat("%d", w->getPID());
+                if (matchCheck != pid)
+                    continue;
+                break;
+            }
+            default:
+                break;
         }
-        else {
-            const auto windowClass = g_pXWaylandManager->getAppIDClass(w.get());
-            if (!std::regex_search(windowClass, regexCheck))
-                continue;
-        }
+
 
         Debug::log(LOG, "Focusing to window name: %s", w->m_szTitle.c_str());
 
