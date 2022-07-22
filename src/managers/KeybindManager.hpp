@@ -25,11 +25,13 @@ public:
     CKeybindManager();
 
     bool                onKeyEvent(wlr_keyboard_key_event*, SKeyboard*);
+    bool                onAxisEvent(wlr_pointer_axis_event*);
     
     void                addKeybind(SKeybind);
     void                removeKeybind(uint32_t, const std::string&);
     uint32_t            stringToModMask(std::string);
     void                clearKeybinds();
+    void                shadowKeybinds();
 
     std::unordered_map<std::string, std::function<void(std::string)>> m_mDispatchers;
 
@@ -42,9 +44,7 @@ private:
 
     xkb_keysym_t        m_kHeldBack = 0;
 
-    bool                handleKeybinds(const uint32_t&, const xkb_keysym_t&, const int&, bool, uint32_t);
-
-    void                shadowKeybinds();
+    bool                handleKeybinds(const uint32_t&, const std::string&, const xkb_keysym_t&, const int&, bool, uint32_t);
 
     bool                handleInternalKeybinds(xkb_keysym_t);
     bool                handleVT(xkb_keysym_t);

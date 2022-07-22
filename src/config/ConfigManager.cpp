@@ -1154,6 +1154,10 @@ void CConfigManager::dispatchExecOnce() {
     }
 
     firstExecRequests.clear(); // free some kb of memory :P
+
+    // set input, fixes some certain issues
+    g_pInputManager->setKeyboardLayout();
+    g_pInputManager->setMouseConfigs();
 }
 
 void CConfigManager::performMonitorReload() {
