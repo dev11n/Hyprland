@@ -1,5 +1,5 @@
 > **Warning**:
-> This fork is archived, you may however replicate it 1:1 by modifying `/etc/environment
+> This fork is archived, you may however replicate it 1:1 by modifying `/etc/environment`
 
 ```
 export LIBVA_DRIVER_NAME=nvidia
