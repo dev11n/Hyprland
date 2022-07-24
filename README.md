@@ -1,3 +1,20 @@
+> **Warning**:
+> This fork is archived, you may however replicate it 1:1 by modifying `/etc/environment
+
+```
+export LIBVA_DRIVER_NAME=nvidia
+export CLUTTER_BACKEND=wayland
+export XDG_SESSION_TYPE=wayland
+export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+export MOZ_ENABLE_WAYLAND=1
+export GBM_BACKEND=nvidia-drm
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export WLR_NO_HARDWARE_CURSORS=1
+export WLR_BACKEND=vulkan
+```
+
+***
+
 <div align = center>
 
 <img src="https://raw.githubusercontent.com/vaxerski/Hyprland/main/assets/header.svg" width="750" height="300" alt="banner">
